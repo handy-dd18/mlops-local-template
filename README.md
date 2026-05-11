@@ -1,4 +1,4 @@
-# mlops-local-template
+# (作成中)mlops-local-template
 
 A **fully local MLOps template** for a small data-science / data-engineer pair. The whole stack — Jupyter, MLflow, an S3+Glue+RDS emulator (Floci/LocalStack-compatible), and a dbt runner — runs in Docker on a laptop, with no SaaS or cloud account required. The bundled sample use case is **Telco customer churn**: data scientists explore the raw CSV in a notebook while the engineer track promotes the same CSV through S3 → Glue → RDS → dbt → an MLflow-tracked classifier.
 
