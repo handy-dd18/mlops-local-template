@@ -1,0 +1,12 @@
+# Runtime deps for the python scripts in this folder.
+#
+# These execute inside the `dbt` service container, which already
+# installs the same versions via dbt/requirements.txt — this file is
+# kept in sync so the scripts can also be executed in a fresh venv
+# (e.g. inside the jupyter container or on the host) without surprises.
+boto3==1.43.6
+pandas==2.3.3
+psycopg2-binary==2.9.12
+SQLAlchemy==2.0.44
+scikit-learn==1.7.2
+mlflow==3.12.0

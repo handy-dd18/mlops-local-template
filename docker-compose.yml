@@ -1,0 +1,136 @@
+name: mlops-local-template
+
+networks:
+  mlops-net:
+    driver: bridge
+
+services:
+  mlflow-backend-db:
+    image: postgres:16-alpine
+    container_name: mlops-mlflow-backend-db
+    restart: unless-stopped
+    networks:
+      - mlops-net
+    environment:
+      POSTGRES_USER: ${MLFLOW_DB_USER:-mlflow}
+      POSTGRES_PASSWORD: ${MLFLOW_DB_PASSWORD:-mlflow}
+      POSTGRES_DB: ${MLFLOW_DB_NAME:-mlflow}
+    volumes:
+      - ./volumes/mlflow-backend-db:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${MLFLOW_DB_USER:-mlflow} -d ${MLFLOW_DB_NAME:-mlflow}
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  floci:
+    image: floci/floci:latest
+    container_name: mlops-floci
+    restart: unless-stopped
+    networks:
+      - mlops-net
+    ports:
+      - "${FLOCI_PORT:-4566}:4566"
+    environment:
+      SERVICES: s3,glue,rds,iam,sts
+      DEBUG: "0"
+      FLOCI_STORAGE_PERSISTENT_PATH: /data
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+    volumes:
+      - ./volumes/floci-storage:/data
+      - ./infra/floci/init:/etc/floci/init:ro
+    healthcheck:
+      # NOTE: assumes the image ships curl. If the Floci image lacks curl,
+      # comment this block out — `docker compose config` is unaffected.
+      test:
+        - CMD-SHELL
+        - curl -sf http://localhost:4566/_localstack/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  mlflow:
+    build:
+      context: ./mlflow
+    container_name: mlops-mlflow
+    restart: unless-stopped
+    networks:
+      - mlops-net
+    ports:
+      - "${MLFLOW_PORT:-5000}:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${MLFLOW_DB_USER:-mlflow}:${MLFLOW_DB_PASSWORD:-mlflow}@mlflow-backend-db:5432/${MLFLOW_DB_NAME:-mlflow}
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: s3://${MLFLOW_ARTIFACT_BUCKET:-mlflow-artifacts}/
+      MLFLOW_S3_ENDPOINT_URL: http://floci:4566
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+    depends_on:
+      mlflow-backend-db:
+        condition: service_healthy
+      floci:
+        condition: service_started
+
+  jupyter:
+    # Pinned dated tag — do NOT switch to :latest.
+    image: quay.io/jupyter/scipy-notebook:2024-12-23
+    container_name: mlops-jupyter
+    restart: unless-stopped
+    networks:
+      - mlops-net
+    ports:
+      - "${JUPYTER_PORT:-8888}:8888"
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:-mlops}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://floci:4566
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      RAW_BUCKET: ${RAW_BUCKET:-raw-data}
+      MLFLOW_ARTIFACT_BUCKET: ${MLFLOW_ARTIFACT_BUCKET:-mlflow-artifacts}
+    volumes:
+      - ./notebooks:/home/jovyan/work/notebooks
+      - ./data:/home/jovyan/work/data
+      - ./pipelines:/home/jovyan/work/pipelines
+      - ./scripts:/home/jovyan/work/scripts
+    command:
+      - start-notebook.sh
+      - --NotebookApp.token=${JUPYTER_TOKEN:-mlops}
+    depends_on:
+      - mlflow
+      - floci
+
+  dbt:
+    build:
+      context: ./dbt
+    container_name: mlops-dbt
+    restart: unless-stopped
+    profiles:
+      - tools
+    networks:
+      - mlops-net
+    working_dir: /workspace/dbt
+    environment:
+      DBT_PROFILES_DIR: /workspace/dbt
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://floci:4566
+      RDS_HOST: ${RDS_HOST:-floci}
+      RDS_PORT: ${RDS_PORT:-4510}
+      RDS_USER: ${RDS_USER:-mlops}
+      RDS_PASSWORD: ${RDS_PASSWORD:-mlops}
+      RDS_DB: ${RDS_DB:-mlops}
+      RAW_BUCKET: ${RAW_BUCKET:-raw-data}
+    volumes:
+      - ./dbt:/workspace/dbt
+      - ./pipelines:/workspace/pipelines:ro
+      - ./data:/workspace/data
+    depends_on:
+      - floci

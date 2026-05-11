@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: customer_features
+    description: |
+      One row per customer with engineered features for the churn
+      classifier. Consumed by pipelines/train.py. Schema is intended to
+      stay backwards-compatible — append-only when new features are added.
+    columns:
+      - name: customer_id
+        description: "Stable customer identifier (PK)."
+        tests:
+          - unique
+          - not_null
+      - name: tenure
+        description: "Months as a customer."
+        tests:
+          - not_null
+      - name: is_month_to_month
+        description: "True if contract_type = 'month-to-month'."
+        tests:
+          - not_null
+      - name: tenure_bucket
+        description: "Coarse tenure buckets ('00_0_to_5' .. '04_48_plus')."
+      - name: charges_per_month_of_tenure
+        description: "total_charges / tenure. NULL for tenure=0."
+      - name: num_addon_services
+        description: "Count of opt-in add-on services (0..6)."
+        tests:
+          - not_null
+      - name: churn
+        description: "Target boolean. true = churned."
+        tests:
+          - not_null

@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_customer_churn
+    description: |
+      Type-cast, trimmed, lowercased customer-churn rows. One row per
+      raw row that has a non-null customer_id. Booleans are nullable
+      where the source string didn't match a known yes/no synonym.
+    columns:
+      - name: customer_id
+        description: "Stable customer identifier."
+        tests:
+          - not_null
+      - name: tenure
+        description: "Months as a customer (int)."
+        tests:
+          - not_null
+      - name: monthly_charges
+        description: "Recurring monthly charge in USD (numeric)."
+      - name: total_charges
+        description: "Lifetime charges in USD. NULL for tenure=0 customers."
+      - name: churn
+        description: "Target boolean. true = churned."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false

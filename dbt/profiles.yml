@@ -1,0 +1,28 @@
+# dbt profile — single profile / single target.
+#
+# Connection params are read from env vars set by docker-compose.yml
+# (RDS_HOST, RDS_PORT, RDS_USER, RDS_PASSWORD, RDS_DB). Defaults match
+# .env.example so the project is runnable without an explicit .env.
+#
+# `schema:` here is the *default* schema for unqualified models. Per-folder
+# schema overrides in dbt_project.yml turn this into:
+#   - staging models -> {default}_staging  (resolves to "marts_staging")
+#   - marts   models -> {default}_marts    (resolves to "marts_marts")
+# To get clean schema names ("staging", "marts") we use the
+# `generate_schema_name` macro override below... actually dbt's default
+# concatenates target+custom. We rely on the macro to return the custom
+# name verbatim, defined in macros/get_custom_schema.sql.
+
+mlops_local:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('RDS_HOST', 'floci') }}"
+      port: "{{ env_var('RDS_PORT', '4510') | as_number }}"
+      user: "{{ env_var('RDS_USER', 'mlops') }}"
+      password: "{{ env_var('RDS_PASSWORD', 'mlops') }}"
+      dbname: "{{ env_var('RDS_DB', 'mlops') }}"
+      schema: public
+      threads: 4
+      sslmode: disable

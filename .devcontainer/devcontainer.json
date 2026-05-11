@@ -1,0 +1,22 @@
+{
+  "name": "MLOps Local Template",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "jupyter",
+  "workspaceFolder": "/home/jovyan/work",
+  "forwardPorts": [8888, 5000, 4566],
+  "shutdownAction": "stopCompose",
+  "remoteUser": "jovyan",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.jupyter-renderers",
+        "ms-toolsai.jupyter-keymap",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "ms-toolsai.vscode-jupyter-slideshow"
+      ]
+    }
+  }
+}

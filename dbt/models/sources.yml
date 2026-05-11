@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: raw
+    description: |
+      Raw customer-churn data loaded from S3 into RDS Postgres by
+      pipelines/load_s3_to_rds.py.
+
+      The CANONICAL schema definition lives in the AWS Glue Catalog,
+      not here — see `aws_glue_catalog_table.customer_churn` in
+      infra/terraform/glue.tf. The loader reads the column list and S3
+      location from Glue at runtime, so adding/removing columns there
+      automatically flows into RDS. The column names below intentionally
+      mirror the Glue table for documentation purposes.
+    schema: raw
+    tables:
+      - name: customer_churn
+        description: "Telco customer-churn raw rows. All columns are TEXT in raw; staging casts."
+        columns:
+          - name: customer_id
+            description: "Stable customer identifier."
+          - name: gender
+          - name: senior_citizen
+          - name: partner
+          - name: dependents
+          - name: tenure
+            description: "Months as a customer."
+          - name: phone_service
+          - name: multiple_lines
+          - name: internet_service
+          - name: online_security
+          - name: online_backup
+          - name: device_protection
+          - name: tech_support
+          - name: streaming_tv
+          - name: streaming_movies
+          - name: contract_type
+          - name: paperless_billing
+          - name: payment_method
+          - name: monthly_charges
+          - name: total_charges
+          - name: churn
+            description: "Target. 'Yes'/'No' or 1/0; staging coerces to boolean."
