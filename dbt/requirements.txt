@@ -13,3 +13,4 @@ pandas==2.3.3
 psycopg2-binary==2.9.12
 SQLAlchemy==2.0.44
 scikit-learn==1.7.2
+mlflow==3.12.0
