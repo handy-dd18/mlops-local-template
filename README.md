@@ -10,9 +10,65 @@
 
 ---
 
+## 前提環境
+
+### 必須ツール
+
+ホスト側に以下が入っていれば動きます。Python は不要です（すべてコンテナ内で実行されます）。
+
+| ツール | 最小バージョン | 役割 |
+| --- | --- | --- |
+| Docker Engine | `>= 24.0` | コンテナ実行。Floci の RDS が Docker-in-Docker でホストの Docker デーモンに別 Postgres コンテナを起動させるため、`/var/run/docker.sock` にアクセスできること（Linux / WSL2 ではデフォルトで OK、macOS の Docker Desktop でも標準で OK）。 |
+| Docker Compose | `v2.x`（プラグイン版） | `docker compose` コマンド（ハイフンなし）を使用。古い `docker-compose` v1 は非対応。 |
+| GNU Make | `>= 4.0` | `Makefile` の target 実行。 |
+| Terraform | `>= 1.5.0` | `infra/terraform/versions.tf` の `required_version` で強制。AWS provider `~> 5.70` は `terraform init` 時に自動取得。 |
+| Git | 任意の最近版 | リポジトリの clone のみで使用。 |
+| `curl` | 任意 | Floci の healthcheck と動作確認スニペットで使用。多くのディストロで標準搭載。 |
+
+### サポート OS
+
+| OS | 確認状況 | 補足 |
+| --- | --- | --- |
+| Linux (Ubuntu 22.04 / Debian / Fedora) | ✅ 動作確認済み | 最も摩擦が少ない。 |
+| Windows 11 + WSL2 (Ubuntu) | ✅ 動作確認済み | Docker Desktop の WSL2 統合 ON、または WSL 内に Docker Engine を直接インストール。WSL ファイルシステム上に clone すること（`/mnt/c/...` 上は遅い + パーミッション問題が起きやすい）。 |
+| macOS (Docker Desktop) | ⚠ 未検証 | Floci RDS の Docker-in-Docker は Docker Desktop でも動作する想定だが、本リポジトリでの実機検証はしていない。問題があれば [troubleshooting.md](docs/troubleshooting.md) に追記してください。 |
+| Windows ネイティブ（WSL2 なし） | ❌ 非対応 | Make / bash スクリプトに依存。 |
+
+### マシンリソース目安
+
+- **RAM**: 4 GB 以上を Docker に割り当て可能であること。常時稼働 4 コンテナ + ジョブ実行時の dbt/jupyter で実測 1.5〜2 GB 程度。
+- **ディスク**: 約 5 GB 空き（イメージ 約 3 GB + `./volumes/` 配下の永続データ + MLflow アーティファクト）。
+- **CPU**: x86_64 推奨。すべてのイメージは `linux/amd64`。Apple Silicon は Rosetta エミュレーションで動作する想定（未検証）。
+
+### 動作確認済み環境（このテンプレートが実際に通った組み合わせ）
+
+| 項目 | 値 |
+| --- | --- |
+| OS | Ubuntu 22.04.5 LTS on WSL2（Linux 5.15.x） |
+| Docker Engine | `28.1.1`（Client / Server） |
+| Docker Compose | `v2.35.1` |
+| GNU Make | `4.3` |
+| Terraform | `1.11.4` |
+| Git | `2.34.1` |
+
+ホスト側の Python やライブラリは一切不要です。コンテナ側のバージョンは [ピン留めバージョン](#ピン留めバージョン) を参照してください。
+
+### ネットワーク要件
+
+`make up` 初回と `terraform init` 初回は以下のイメージ / プロバイダのダウンロードが必要です:
+
+- Docker Hub (`floci/floci`, `postgres`, `python`, `alpine`)
+- Quay (`quay.io/jupyter/scipy-notebook`)
+- Terraform Registry (`registry.terraform.io/hashicorp/aws`)
+- PyPI（イメージビルド時に `pip install`）
+
+これら以外はオフラインで完結します。WSL2 で `localhost:5000` / `localhost:8888` をブラウザから開けることも確認してください（Docker Desktop 統合 ON ならポートフォワードは自動）。
+
+---
+
 ## 5 分で立ち上げる
 
-前提: Docker（Compose v2 含む）、GNU Make、Terraform `>= 1.5`。WSL2 ユーザーは [troubleshooting.md](docs/troubleshooting.md) を参照してください。
+上記前提が揃っていれば、以下のコマンドだけで一気に立ち上がります。
 
 ```bash
 # 1. 設定
