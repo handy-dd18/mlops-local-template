@@ -18,8 +18,8 @@ mlops_local:
   outputs:
     dev:
       type: postgres
-      host: "{{ env_var('RDS_HOST', 'floci') }}"
-      port: "{{ env_var('RDS_PORT', '4510') | as_number }}"
+      host: "{{ env_var('RDS_HOST', 'floci-rds-mlops-rds') }}"
+      port: "{{ env_var('RDS_PORT', '5432') | as_number }}"
       user: "{{ env_var('RDS_USER', 'mlops') }}"
       password: "{{ env_var('RDS_PASSWORD', 'mlops') }}"
       dbname: "{{ env_var('RDS_DB', 'mlops') }}"

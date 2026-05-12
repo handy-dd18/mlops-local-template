@@ -31,13 +31,13 @@ output "rds_endpoint" {
 }
 
 output "rds_host" {
-  description = "Hostname clients should connect to. Inside the docker network this is the Floci service name."
-  value       = "floci"
+  description = "Hostname clients should connect to from inside mlops-net. Floci spawns a sibling Postgres container named floci-rds-<instance-id>; attach it to mlops-net with `make rds-attach`."
+  value       = "floci-rds-mlops-rds"
 }
 
 output "rds_port" {
-  description = "Postgres port exposed by Floci. LocalStack/Floci default for Postgres is 4510."
-  value       = 4510
+  description = "Postgres listens on its native 5432 inside the spawned RDS container (NOT the Floci-reported host port)."
+  value       = 5432
 }
 
 output "rds_db_name" {
@@ -58,5 +58,5 @@ output "rds_password" {
 
 output "rds_jdbc_url" {
   description = "Convenience JDBC URL for dbt / pipeline consumers. Use from within the docker network."
-  value       = "jdbc:postgresql://floci:4510/${aws_db_instance.mlops.db_name}"
+  value       = "jdbc:postgresql://floci-rds-mlops-rds:5432/${aws_db_instance.mlops.db_name}"
 }

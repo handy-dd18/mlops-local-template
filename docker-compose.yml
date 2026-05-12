@@ -39,9 +39,15 @@ services:
       DEBUG: "0"
       FLOCI_STORAGE_PERSISTENT_PATH: /data
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      # Floci spawns sibling Docker containers for RDS via the host's Docker daemon.
+      # MAIN_DOCKER_NETWORK tells those children to attach to this stack's bridge
+      # so the dbt and pipelines services can reach them by hostname.
+      MAIN_DOCKER_NETWORK: mlops-local-template_mlops-net
+      DOCKER_HOST: unix:///var/run/docker.sock
     volumes:
       - ./volumes/floci-storage:/data
       - ./infra/floci/init:/etc/floci/init:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       # NOTE: assumes the image ships curl. If the Floci image lacks curl,
       # comment this block out — `docker compose config` is unaffected.
@@ -122,8 +128,8 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_S3_ENDPOINT_URL: http://floci:4566
-      RDS_HOST: ${RDS_HOST:-floci}
-      RDS_PORT: ${RDS_PORT:-4510}
+      RDS_HOST: ${RDS_HOST:-floci-rds-mlops-rds}
+      RDS_PORT: ${RDS_PORT:-5432}
       RDS_USER: ${RDS_USER:-mlops}
       RDS_PASSWORD: ${RDS_PASSWORD:-mlops}
       RDS_DB: ${RDS_DB:-mlops}

@@ -7,7 +7,7 @@ TF_DIR := infra/terraform
 
 .DEFAULT_GOAL := help
 
-.PHONY: help up down logs ps nuke tf-init tf-apply tf-destroy seed load-rds dbt-run dbt-test train generate-data
+.PHONY: help up down logs ps nuke tf-init tf-apply tf-destroy rds-attach seed load-rds dbt-run dbt-test train generate-data
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -44,6 +44,10 @@ tf-apply: ## terraform apply -auto-approve
 tf-destroy: ## terraform destroy -auto-approve
 	@echo ">> terraform destroy -auto-approve ($(TF_DIR))"
 	cd $(TF_DIR) && terraform destroy -auto-approve
+
+rds-attach: ## Attach the Floci-spawned RDS container to mlops-net (idempotent; run after tf-apply)
+	@echo ">> docker network connect mlops-local-template_mlops-net floci-rds-mlops-rds"
+	@docker network connect mlops-local-template_mlops-net floci-rds-mlops-rds 2>/dev/null && echo "attached" || echo "already attached or container missing"
 
 seed: ## Upload local CSVs to Floci S3 (requires pipelines/seed_s3.py)
 	@echo ">> seed_s3.py via dbt container"
