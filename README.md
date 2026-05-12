@@ -1,4 +1,4 @@
-# (作成中)mlops-local-template
+# mlops-local-template
 
 データサイエンティスト / データエンジニアの小規模ペアを想定した、**完全ローカル完結の MLOps テンプレート**です。Jupyter、MLflow、S3+Glue+RDS エミュレータ（Floci、LocalStack 互換）、dbt ランナーをまとめて Docker でノート PC 上に立ち上げます。SaaS もクラウドアカウントも不要です。同梱のサンプルユースケースは **Telco 顧客離反予測**で、DS は同じ生 CSV を Notebook で探索しつつ、エンジニアトラックは S3 → Glue → RDS → dbt → MLflow に登録された分類器へと昇格させます。
 
