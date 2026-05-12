@@ -175,6 +175,13 @@ def load_to_rds(engine, columns: List[str], csv_bytes: bytes) -> int:
 
 def main() -> int:
     print(f"[load] endpoint = {_endpoint_url()}")
+    # The Glue Catalog DB+Table are managed outside Terraform (Floci limitation).
+    # Make this script self-sufficient by ensuring they exist first.
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import setup_glue  # noqa: E402
+    setup_glue.main()
+
     columns, location = fetch_glue_metadata()
     csv_bytes = download_csv(location)
     engine = _rds_engine()

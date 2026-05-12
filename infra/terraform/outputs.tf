@@ -16,13 +16,13 @@ output "mlflow_artifacts_bucket_name" {
 }
 
 output "glue_database_name" {
-  description = "Glue Catalog database for raw-layer metadata."
-  value       = aws_glue_catalog_database.mlops.name
+  description = "Glue Catalog database for raw-layer metadata. Managed by pipelines/setup_glue.py (see glue.tf)."
+  value       = var.glue_database_name
 }
 
 output "glue_customer_churn_table_name" {
-  description = "Glue Catalog table for the Telco-churn raw CSV."
-  value       = aws_glue_catalog_table.customer_churn.name
+  description = "Glue Catalog table for the Telco-churn raw CSV. Managed by pipelines/setup_glue.py (see glue.tf)."
+  value       = "customer_churn"
 }
 
 output "rds_endpoint" {
